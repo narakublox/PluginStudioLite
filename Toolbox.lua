@@ -1,9 +1,21 @@
 -- TOOLBOX STUDIO LITE ROBLOX BY NARAKU
 local LMG2L = {};
 
-print("TOOLBOX NARAKU - Script Berhasil Dimuat!")
+-- Informasi Sistem
+local _sys_name = "TOOLBOX STUDIO LITE"
+local _dev_name = "BY NARAKU BETA"
+local _load_msg = "Script Berhasil Dimuat!"
 
--- ... sisa kode struktur instance kamu ...
+-- Menambahkan sedikit delay dan print yang lebih profesional
+task.spawn(function()
+    print("--------------------------------------------------")
+    print(_sys_name)
+    print(_dev_name)
+    print("Status: System Initialization Complete")
+    print(_load_msg)
+    print("--------------------------------------------------")
+end)
+
 -- Players.EXDestructor01.PlayerGui.ScreenGui
 LMG2L["ScreenGui_1"] = Instance.new("ScreenGui", game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui"));
 LMG2L["ScreenGui_1"]["ZIndexBehavior"] = Enum.ZIndexBehavior.Sibling;
