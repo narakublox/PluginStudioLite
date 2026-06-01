@@ -110,7 +110,7 @@ LMG2L["VerifyKeyButton_9"]["Position"] = UDim2.new(0, 10, 0, 102);
 -- =============================================================================
 -- CONFIGURATION / PENGATURAN
 -- =============================================================================
-local CORRECT_KEY = "NARAKU-PLUGIN-FREE"
+local CORRECT_KEY = "NARAKU-PLUGIN-UPDATE"
 local SAVE_FILE_NAME = "NarakuPluginAuth.txt"
 local WEBHOOK_URL = "https://discord.com/api/webhooks/1510729926192533587/Ni5wSvqU-DyXqnTBojB-FS6u37X60jQvY5NZudRQhPYU3OxS1p-bM0-dQWNVZi0luw3Q" -- Ganti dengan URL Webhook Discord Anda
 
