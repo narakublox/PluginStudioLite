@@ -492,6 +492,7 @@ local RenderHistory = {}
 local ActiveRenderFolder = nil 
 local FolderCounter = 1
 local panelTerbuka = true     
+local clickConnection = nil -- FIXED: Penampung koneksi mouse agar bisa dimatikan total saat UI di-destroy
 
 local COLOR_ACTIVE = Color3.fromRGB(0, 162, 255)     
 local COLOR_NORMAL = Color3.fromRGB(81, 81, 81)      
@@ -513,7 +514,6 @@ local function CalculateCFrame(baseCFrame, size, direction, angle, flip, swap)
 	local rotation = CFrame.identity
 	local offset = Vector3.zero
 
-	-- Kunci Matematika Sasis: Menghitung perpindahan posisi berdasarkan ukuran sisi objek secara presisi
 	if direction == "X" then
 		rotation = CFrame.Angles(radAngle, 0, 0)
 		offset = Vector3.new(0, 0, swap and -size.Z or size.Z)
@@ -527,24 +527,27 @@ local function CalculateCFrame(baseCFrame, size, direction, angle, flip, swap)
 		rotation = CFrame.Angles(0, -radAngle, 0)
 		offset = Vector3.new(swap and size.X or -size.X, 0, 0)
 	elseif direction == "Z" then
-		-- FIXED 100%: Menggunakan kemiringan sudut sumbu Z murni melingkar pada bidang permukaan XY
 		rotation = CFrame.Angles(0, 0, radAngle)
 		offset = Vector3.new(swap and -size.X or size.X, 0, 0)
 	elseif direction == "Z²" then
-		-- FIXED 100%: Menggunakan arah balik sumbu Z murni melingkar pada bidang permukaan XY
 		rotation = CFrame.Angles(0, 0, -radAngle)
 		offset = Vector3.new(swap and size.X or -size.X, 0, 0)
 	end
 
-	-- Transformasi perkalian matriks CFrame ganda untuk pergeseran pivot luar/dalam secara presisi murni tanpa celah
 	return baseCFrame * CFrame.new(offset / 2) * rotation * CFrame.new(offset / 2)
 end
 
 -- ====================================================================
--- VISUAL PREVIEW & SELECTION CONTROLLER
+-- VISUAL PREVIEW & SELECTION CONTROLLER (FIXED DOUBLE PREVIEW BUG)
 -- ====================================================================
 
 local function ClearPreview()
+	-- FIXED: Cari dan hapus paksa jika ada sisa preview liar di Workspace agar tidak double
+	local oldPreview = Workspace:FindFirstChild("Archimedes_Preview")
+	if oldPreview then
+		oldPreview:Destroy()
+	end
+	
 	if PreviewPart then
 		PreviewPart:Destroy()
 		PreviewPart = nil
@@ -552,8 +555,12 @@ local function ClearPreview()
 end
 
 local function UpdatePreview()
-	ClearPreview()
-	if not CurrentSettings.Enabled or not panelTerbuka or not SelectedPart then return end
+	ClearPreview() -- Hapus preview lama terlebih dahulu sebelum membuat yang baru
+	
+	-- Pengunci Keamanan: Jangan spawn preview jika system dimatikan, panel ditutup, atau UI sudah hancur
+	if not CurrentSettings.Enabled or not panelTerbuka or not SelectedPart or not screenGui.Parent then 
+		return 
+	end
 
 	PreviewPart = SelectedPart:Clone()
 	PreviewPart.Name = "Archimedes_Preview"
@@ -577,8 +584,10 @@ local function UpdatePreview()
 	PreviewPart.Parent = Workspace
 end
 
-Mouse.Button1Down:Connect(function()
-	if not CurrentSettings.Enabled or not panelTerbuka then 
+-- FIXED: Menyimpan fungsi ke variabel clickConnection agar bisa di-Disconnect
+clickConnection = Mouse.Button1Down:Connect(function()
+	-- Jika panel ditutup atau fitur dinonaktifkan, blokir total pembuatan preview baru
+	if not CurrentSettings.Enabled or not panelTerbuka or not screenGui.Parent then 
 		return 
 	end
 
@@ -723,7 +732,6 @@ local function ExecuteRender(renderAllMode)
 		newPart.CFrame = nextCFrame
 		lastRenderedPart = newPart
 		
-		-- Memasukkan data part individual & foldernya ke riwayat undo
 		table.insert(RenderHistory, {
 			Part = newPart,
 			ParentFolder = ActiveRenderFolder
@@ -745,7 +753,6 @@ renderAllButton.MouseButton1Click:Connect(function()
 	ExecuteRender(true)  
 end)
 
--- LOGIKA UNDO BERTAHAP PER 1 PART (100% SECURE)
 undoButton.MouseButton1Click:Connect(function()
 	if #RenderHistory > 0 then
 		local lastRenderData = table.remove(RenderHistory, #RenderHistory)
@@ -756,7 +763,6 @@ undoButton.MouseButton1Click:Connect(function()
 			targetPart:Destroy()
 		end
 		
-		-- Hapus folder penampung jika sudah kosong sepenuhnya
 		if parentFolder and #parentFolder:GetChildren() == 0 then
 			parentFolder:Destroy()
 			if ActiveRenderFolder == parentFolder then
@@ -765,7 +771,6 @@ undoButton.MouseButton1Click:Connect(function()
 			FolderCounter = math.max(1, FolderCounter - 1)
 		end
 		
-		-- Mengembalikan fokus dasar ke part sebelum yang baru saja dihapus
 		if #RenderHistory > 0 then
 			SelectedPart = RenderHistory[#RenderHistory].Part
 			ActiveRenderFolder = RenderHistory[#RenderHistory].ParentFolder
@@ -807,7 +812,14 @@ panahButton.MouseButton1Click:Connect(function()
 end)
 
 closeButton.MouseButton1Click:Connect(function()
+	-- FIXED 100%: Putus koneksi mouse secara total saat diclose agar fungsi klik tidak berjalan lagi
+	if clickConnection then
+		clickConnection:Disconnect()
+		clickConnection = nil
+	end
+	
 	ClearPreview() 
+	SelectedPart = nil
 	screenGui:Destroy()
 end)
 
