@@ -123,7 +123,7 @@ LMG2L["SearchAsset_b"]["BackgroundColor3"] = Color3.fromRGB(36, 36, 36);
 LMG2L["SearchAsset_b"]["Size"] = UDim2.new(0, 260, 0, 30);
 LMG2L["SearchAsset_b"]["Position"] = UDim2.new(0, 0, 0, 57);
 LMG2L["SearchAsset_b"]["BorderColor3"] = Color3.fromRGB(59, 59, 59);
-LMG2L["SearchAsset_b"]["Text"] = [[Cari Asset..]];
+LMG2L["SearchAsset_b"]["Text"] = [[Search Asset..]];
 
 
 -- Players.EXDestructor01.PlayerGui.ScreenGui.Panel.SearchAsset.GetButton
