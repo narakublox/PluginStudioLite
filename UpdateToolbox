@@ -574,6 +574,90 @@ local function C_1e()
 			end
 		end
 
+        -------------------------------------------------------------------------
+		-- ADVANCED ASSET PARSER & CONDITIONAL ANCHORED (ANTI-CRASH STUDIO LITE)
+		-------------------------------------------------------------------------
+		local function RobustAssetParser(assetId, targetParent)
+			local InsertService = game:GetService("InsertService")
+			local cam = workspace.CurrentCamera
+			local spawnPosition = cam.CFrame * CFrame.new(0, 0, -15) -- 15 Stud di depan kamera
+			local model = nil
+			local isUnsupportedAsset = false -- Penanda apakah aset ini tidak didukung client
+
+			-- [METODE 1] LoadAsset Standar untuk Aset yang Didukung
+			local success, err = pcall(function()
+				model = InsertService:LoadAsset(assetId)
+			end)
+
+			-- [METODE 2 & 3] Fallback System JIKA Aset Tidak Didukung / Corrupt
+			if not success or not model then
+				warn("⚠️ LoadAsset Gagal! Mengaktifkan Prosedur Placeholder untuk ID: " .. tostring(assetId))
+				isUnsupportedAsset = true -- Set penanda aktif karena masuk mode fallback
+				
+				-- Membuat Model penampung darurat khusus aset tidak didukung
+				model = Instance.new("Model")
+				model.Name = "SL_FixAsset_" .. tostring(assetId)
+				
+				-- Menyisipkan komponen visual darurat (Placeholder)
+				local placeholder = Instance.new("Part", model)
+				placeholder.Size = Vector3.new(4, 4, 4)
+				placeholder.Color = Color3.fromRGB(235, 64, 52)
+				placeholder.Material = Enum.Material.Neon
+				
+				local selBox = Instance.new("SelectionBox", placeholder)
+				selBox.Adornee = placeholder
+				selBox.Color3 = Color3.fromRGB(255, 0, 0)
+				
+				local bGui = Instance.new("BillboardGui", placeholder)
+				bGui.Size = UDim2.new(0, 180, 0, 40)
+				bGui.AlwaysOnTop = true
+				
+				local lbl = Instance.new("TextLabel", bGui)
+				lbl.Size = UDim2.new(1, 0, 1, 0)
+				lbl.Text = "Aset Tidak Didukung Client"
+				lbl.TextColor3 = Color3.fromRGB(255, 255, 255)
+				lbl.BackgroundTransparency = 1
+				lbl.TextScaled = true
+			end
+
+			-- [PROSES FINALIZATION] Penempatan & Injeksi Kondisional
+			if model then
+				model:PivotTo(spawnPosition)
+				model.Parent = targetParent or workspace
+				
+				-- Lakukan pemindaian rekursif untuk pembersihan skrip berbahaya
+				for _, descendant in ipairs(model:GetDescendants()) do
+					-- Bersihkan Script bawaan model yang sering bikin game force close saat STOP
+					if descendant:IsA("LuaSourceContainer") then
+						descendant:Destroy()
+						
+					-- LOGIKA KHUSUS: Hanya paksa Anchored + Attribute jika aset ini terbukti TIDAK DIDUKUNG
+					elseif descendant:IsA("BasePart") and isUnsupportedAsset then
+						descendant.Anchored = true
+						descendant.CanCollide = true
+						
+						-- Suntikkan Atribut validasi internal agar dikenali sistem JSON Studio Lite
+						descendant:SetAttribute("SL_Anchored", true)
+						descendant:SetAttribute("SL_CanCollide", true)
+						
+						pcall(function()
+							descendant.TopSurface = Enum.SurfaceType.Smooth
+							descendant.BottomSurface = Enum.SurfaceType.Smooth
+						end)
+					end
+				end
+				
+				if isUnsupportedAsset then
+					print("⚠️ [System Fix] Sukses Menangani Aset Terproteksi (Placeholder Ter-Anchored): " .. tostring(assetId))
+				else
+					print("✅ [System Fix] Sukses Memuat Aset Normal (Sesuai Properti Asli): " .. tostring(assetId))
+				end
+				
+				return model
+			end
+			return nil
+		end
+
 		-------------------------------------------------------------------------
 		-- FUNGSI INSERT UTAMA (SISTEM FALLBACK INTELIJEN UNTUK WORKSPACE RESMI)
 		-------------------------------------------------------------------------
