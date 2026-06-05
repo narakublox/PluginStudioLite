@@ -575,14 +575,14 @@ local function C_1e()
 		end
 
         -------------------------------------------------------------------------
-		-- ADVANCED ASSET PARSER & CONDITIONAL ANCHORED (ANTI-CRASH STUDIO LITE)
+		-- ADVANCED ASSET PARSER & CONDITIONAL ANCHORED (FIXED 100% ANTI-FALL)
 		-------------------------------------------------------------------------
 		local function RobustAssetParser(assetId, targetParent)
 			local InsertService = game:GetService("InsertService")
 			local cam = workspace.CurrentCamera
 			local spawnPosition = cam.CFrame * CFrame.new(0, 0, -15) -- 15 Stud di depan kamera
 			local model = nil
-			local isUnsupportedAsset = false -- Penanda apakah aset ini tidak didukung client
+			local isUnsupportedAsset = false 
 
 			-- [METODE 1] LoadAsset Standar untuk Aset yang Didukung
 			local success, err = pcall(function()
@@ -592,17 +592,28 @@ local function C_1e()
 			-- [METODE 2 & 3] Fallback System JIKA Aset Tidak Didukung / Corrupt
 			if not success or not model then
 				warn("⚠️ LoadAsset Gagal! Mengaktifkan Prosedur Placeholder untuk ID: " .. tostring(assetId))
-				isUnsupportedAsset = true -- Set penanda aktif karena masuk mode fallback
+				isUnsupportedAsset = true 
 				
 				-- Membuat Model penampung darurat khusus aset tidak didukung
 				model = Instance.new("Model")
 				model.Name = "SL_FixAsset_" .. tostring(assetId)
 				
 				-- Menyisipkan komponen visual darurat (Placeholder)
-				local placeholder = Instance.new("Part", model)
+				local placeholder = Instance.new("Part")
 				placeholder.Size = Vector3.new(4, 4, 4)
 				placeholder.Color = Color3.fromRGB(235, 64, 52)
 				placeholder.Material = Enum.Material.Neon
+				
+				-----------------------------------------------------------------
+				-- FIX UTAMA: Kunci Posisi Objek Darurat Langsung Saat Dibuat!
+				-----------------------------------------------------------------
+				placeholder.Anchored = true
+				placeholder.CanCollide = true
+				placeholder:SetAttribute("SL_Anchored", true)
+				placeholder:SetAttribute("SL_CanCollide", true)
+				-----------------------------------------------------------------
+				
+				placeholder.Parent = model
 				
 				local selBox = Instance.new("SelectionBox", placeholder)
 				selBox.Adornee = placeholder
@@ -620,7 +631,7 @@ local function C_1e()
 				lbl.TextScaled = true
 			end
 
-			-- [PROSES FINALIZATION] Penempatan & Injeksi Kondisional
+			-- [PROSES FINALIZATION] Penempatan & Injeksi Kondisional Eksternal
 			if model then
 				model:PivotTo(spawnPosition)
 				model.Parent = targetParent or workspace
@@ -631,12 +642,11 @@ local function C_1e()
 					if descendant:IsA("LuaSourceContainer") then
 						descendant:Destroy()
 						
-					-- LOGIKA KHUSUS: Hanya paksa Anchored + Attribute jika aset ini terbukti TIDAK DIDUKUNG
+					-- LOGIKA AMAN: Jika ada part lain di dalam aset tidak didukung, kunci semuanya!
 					elseif descendant:IsA("BasePart") and isUnsupportedAsset then
 						descendant.Anchored = true
 						descendant.CanCollide = true
 						
-						-- Suntikkan Atribut validasi internal agar dikenali sistem JSON Studio Lite
 						descendant:SetAttribute("SL_Anchored", true)
 						descendant:SetAttribute("SL_CanCollide", true)
 						
