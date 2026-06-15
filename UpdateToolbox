@@ -3,6 +3,7 @@
 
 -- Instances: 24 | Scripts: 0 | Modules: 0 | Tags: 0
 local LMG2L = {};
+local AssetInfoCache = {};
 
 -- Players.EXDestructor01.PlayerGui.ScreenGui
 LMG2L["ScreenGui_1"] = Instance.new("ScreenGui", game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui"));
@@ -754,146 +755,145 @@ local function C_1e()
 			end
 		end
 
-		-------------------------------------------------------------------------
-		-- RENDER LIST ASSET & AUTOMATIC SCROLL BAR CANVAS CALIBRATION
-		-------------------------------------------------------------------------
-		local function RenderAssets(searchQuery)
-			ClearList()
-			
-			-- Generate ID sesi pencarian unik untuk thread saat ini
-			CurrentSessionId = CurrentSessionId + 1
-			local thisSession = CurrentSessionId
-			
-			-- Kunci target kategori di awal pemanggilan fungsi agar data tidak nyasar silang tab menu
-			local targetCategoryAtCall = CurrentCategory
-			local targetList = SavedAssets[targetCategoryAtCall] or {}
-			
-			-- Normalisasi query pencarian teks kata kunci nama asset
-			local query = ""
-			if searchQuery then
-				local cleanQuery = searchQuery:match("^%s*(.-)%s*$")
-				if cleanQuery then
-					query = cleanQuery:lower()
-				end
-			end
-			if query == "cari asset.." then query = "" end
+-------------------------------------------------------------------------
+-- RENDER LIST ASSET & AUTOMATIC SCROLL BAR CANVAS CALIBRATION
+-------------------------------------------------------------------------
+local function RenderAssets(searchQuery)
+    ClearList()
+    
+    -- Generate ID sesi pencarian unik untuk thread saat ini
+    CurrentSessionId = CurrentSessionId + 1
+    local thisSession = CurrentSessionId
+    
+    local targetCategoryAtCall = CurrentCategory
+    local targetList = SavedAssets[targetCategoryAtCall] or {}
+    
+    local query = ""
+    if searchQuery and searchQuery ~= "cari asset.." then
+        query = searchQuery:lower():match("^%s*(.-)%s*$") or ""
+    end
 
-			local function UpdateCanvas()
-				-- Pastikan UI masih berada di kategori yang sama sebelum menghitung Canvas
-				if CurrentCategory ~= targetCategoryAtCall then return end
-				local layout = ScrollingFrame:FindFirstChild("UIListLayout")
-				if layout then
-					ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + 25)
-				end
-			end
+    local function UpdateCanvas()
+        -- Pastikan UI masih berada di kategori yang sama sebelum menghitung Canvas
+        if CurrentCategory ~= targetCategoryAtCall then return end
+        local layout = ScrollingFrame:FindFirstChild("UIListLayout")
+        if layout then
+            ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + 25)
+        end
+    end
 
-			for _, assetId in ipairs(targetList) do
-				task.spawn(function()
-					local success, info = pcall(function() return MarketplaceService:GetProductInfo(assetId) end)
-					
-					-- PROTEKSI BUG NYASAR: Batalkan render jika user sudah menekan/berpindah ke tab menu lain!
-					if thisSession ~= CurrentSessionId or CurrentCategory ~= targetCategoryAtCall then 
-						return 
-					end
-					
-					if success and info then
-						-- VALIDASI KATA KUNCI FIX: Filter berdasarkan teks potongan kata pada nama maupun ID
-						if query ~= "" then
-							local assetNameLower = info.Name:lower()
-							local assetIdStr = tostring(assetId)
-							
-							if not assetNameLower:find(query, 1, true) and not assetIdStr:find(query, 1, true) then
-								return -- Lewati asset jika kata kunci nama tidak cocok
-							end
-						end
+    for _, assetId in ipairs(targetList) do
+        task.spawn(function()
+            -- PERBAIKAN: Gunakan Caching agar tidak memanggil MarketplaceService berkali-kali
+            local success, info = true, AssetInfoCache[assetId]
+            
+            if not info then
+                success, info = pcall(function() return MarketplaceService:GetProductInfo(assetId) end)
+                if success and info then
+                    AssetInfoCache[assetId] = info
+                end
+            end
+            
+            -- PROTEKSI BUG NYASAR: Batalkan render jika user sudah menekan/berpindah ke tab menu lain!
+            if thisSession ~= CurrentSessionId or CurrentCategory ~= targetCategoryAtCall then 
+                return 
+            end
+            
+            if success and info then
+                -- VALIDASI KATA KUNCI FIX
+                if query ~= "" then
+                    local assetNameLower = info.Name:lower()
+                    local assetIdStr = tostring(assetId)
+                    if not assetNameLower:find(query, 1, true) and not assetIdStr:find(query, 1, true) then
+                        return 
+                    end
+                end
 
-						-- Clone manual berdasarkan struktur instansiasi baru Anda (LMG2L["Frame_11"])
-						local card = Instance.new("Frame")
-						card.BorderSizePixel = TemplateFrame.BorderSizePixel
-						card.BackgroundColor3 = TemplateFrame.BackgroundColor3
-						card.Size = TemplateFrame.Size
-						card.BorderColor3 = TemplateFrame.BorderColor3
-						card.Visible = true
-						card.Parent = ScrollingFrame
-						card.Name = "Asset_" .. assetId
+                -- Clone manual berdasarkan struktur instansiasi LMG2L Anda
+                local card = Instance.new("Frame")
+                card.BorderSizePixel = TemplateFrame.BorderSizePixel
+                card.BackgroundColor3 = TemplateFrame.BackgroundColor3
+                card.Size = TemplateFrame.Size
+                card.BorderColor3 = TemplateFrame.BorderColor3
+                card.Visible = true
+                card.Parent = ScrollingFrame
+                card.Name = "Asset_" .. assetId
 
-						-- Menyalin & menyelaraskan anak-anak objek template list baru Anda
-						local SalinButton = LMG2L["SalinButton_12"]:Clone()
-						SalinButton.Parent = card
-						SalinButton.Name = "SalinButton"
+                -- Menyalin anak objek (tetap pakai struktur LMG2L Anda)
+                local SalinButton = LMG2L["SalinButton_12"]:Clone()
+                SalinButton.Parent = card
+                SalinButton.Name = "SalinButton"
 
-						local InsertButton = LMG2L["InsertButton_13"]:Clone()
-						InsertButton.Parent = card
-						InsertButton.Name = "InsertButton"
+                local InsertButton = LMG2L["InsertButton_13"]:Clone()
+                InsertButton.Parent = card
+                InsertButton.Name = "InsertButton"
 
-						local ImageAsset = LMG2L["ImageAsset_14"]:Clone()
-						ImageAsset.Parent = card
-						ImageAsset.Name = "ImageAsset"
+                local ImageAsset = LMG2L["ImageAsset_14"]:Clone()
+                ImageAsset.Parent = card
+                ImageAsset.Name = "ImageAsset"
 
-						local IdAsset = LMG2L["IdAsset_15"]:Clone()
-						IdAsset.Parent = card
-						IdAsset.Name = "IdAsset"
+                local IdAsset = LMG2L["IdAsset_15"]:Clone()
+                IdAsset.Parent = card
+                IdAsset.Name = "IdAsset"
 
-						local ByPemilikAsset = LMG2L["ByPemilikAsset_16"]:Clone()
-						ByPemilikAsset.Parent = card
-						ByPemilikAsset.Name = "ByPemilikAsset"
+                local ByPemilikAsset = LMG2L["ByPemilikAsset_16"]:Clone()
+                ByPemilikAsset.Parent = card
+                ByPemilikAsset.Name = "ByPemilikAsset"
 
-						local NameAsset = LMG2L["NameAsset_17"]:Clone()
-						NameAsset.Parent = card
-						NameAsset.Name = "NameAsset"
+                local NameAsset = LMG2L["NameAsset_17"]:Clone()
+                NameAsset.Parent = card
+                NameAsset.Name = "NameAsset"
 
-						-- Memasukkan Data Text & Gambar Roblox API
-						NameAsset.TextWrapped = true
-						NameAsset.TextYAlignment = Enum.TextYAlignment.Top
-						NameAsset.Text = info.Name
-						ByPemilikAsset.Text = "By: " .. (info.Creator and info.Creator.Name or "Unknown")
-						IdAsset.Text = "ID: " .. tostring(assetId)
+                -- Memasukkan Data Text & Gambar
+                NameAsset.TextWrapped = true
+                NameAsset.TextYAlignment = Enum.TextYAlignment.Top
+                NameAsset.Text = info.Name
+                ByPemilikAsset.Text = "By: " .. (info.Creator and info.Creator.Name or "Unknown")
+                IdAsset.Text = "ID: " .. tostring(assetId)
 
-						if targetCategoryAtCall == "Decal" then
-							ImageAsset.Image = "rbxthumb://type=Asset&id=" .. assetId .. "&w=150&h=150"
-						elseif targetCategoryAtCall == "Audio" then
-							ImageAsset.Image = "rbxassetid://16327318049" -- Gambar Ikon Audio bawaan
-						else
-							ImageAsset.Image = "rbxthumb://type=Asset&id=" .. assetId .. "&w=150&h=150"
-						end
+                if targetCategoryAtCall == "Decal" then
+                    ImageAsset.Image = "rbxthumb://type=Asset&id=" .. assetId .. "&w=150&h=150"
+                elseif targetCategoryAtCall == "Audio" then
+                    ImageAsset.Image = "rbxassetid://16327318049"
+                else
+                    ImageAsset.Image = "rbxthumb://type=Asset&id=" .. assetId .. "&w=150&h=150"
+                end
 
-						SalinButton.MouseButton1Click:Connect(function()
-							setclipboard(tostring(assetId))
-							SalinButton.Text = "Tersalin!"
-							task.wait(1)
-							SalinButton.Text = "Salin"
-						end)
+                SalinButton.MouseButton1Click:Connect(function()
+                    setclipboard(tostring(assetId))
+                    SalinButton.Text = "Tersalin!"
+                    task.wait(1)
+                    SalinButton.Text = "Salin"
+                end)
 
-						InsertButton.MouseButton1Click:Connect(function()
-							InsertAsset(assetId, targetCategoryAtCall, InsertButton)
-							task.wait(1.5)
-							InsertButton.Text = "Insert"
-						end)
+                InsertButton.MouseButton1Click:Connect(function()
+                    InsertAsset(assetId, targetCategoryAtCall, InsertButton)
+                    task.wait(1.5)
+                    InsertButton.Text = "Insert"
+                end)
+                
+                -- PERBAIKAN: Hapus UpdateCanvas dari sini agar rendering tidak lag
+            end
+        end)
+    end
+    
+    -- PERBAIKAN: Panggil UpdateCanvas sekali di akhir proses saja
+    task.delay(0.5, UpdateCanvas)
+end
 
-						UpdateCanvas()
-					end
-				end)
-			end
-			
-			task.defer(function()
-				for i = 1, 5 do UpdateCanvas() task.wait(0.05) end
-			end)
-		end
+local function SwitchTab(tabName)
+    CurrentCategory = tabName
+    ModelButton.BackgroundColor3 = COLOR_INACTIVE
+    DecalButton.BackgroundColor3 = COLOR_INACTIVE
+    AudioButton.BackgroundColor3 = COLOR_INACTIVE
 
-		local function SwitchTab(tabName)
-			CurrentCategory = tabName
-			ModelButton.BackgroundColor3 = COLOR_INACTIVE
-			DecalButton.BackgroundColor3 = COLOR_INACTIVE
-			AudioButton.BackgroundColor3 = COLOR_INACTIVE
-
-			if tabName == "Model" then ModelButton.BackgroundColor3 = COLOR_ACTIVE
-			elseif tabName == "Decal" then DecalButton.BackgroundColor3 = COLOR_ACTIVE
-			elseif tabName == "Audio" then AudioButton.BackgroundColor3 = COLOR_ACTIVE end
-			
-			-- Kosongkan kotak ketikan pencarian saat berpindah kategori agar list tidak rancu
-			SearchAssetBox.Text = "Search Asset.."
-			RenderAssets()
-		end
+    if tabName == "Model" then ModelButton.BackgroundColor3 = COLOR_ACTIVE
+    elseif tabName == "Decal" then DecalButton.BackgroundColor3 = COLOR_ACTIVE
+    elseif tabName == "Audio" then AudioButton.BackgroundColor3 = COLOR_ACTIVE end
+    
+    SearchAssetBox.Text = "Search Asset.."
+    RenderAssets()
+end
 
 		-------------------------------------------------------------------------
 		-- ACTION LISTENERS & EVENT HANDLERS
