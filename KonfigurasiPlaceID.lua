@@ -1,17 +1,26 @@
 -- Konfigurasi Place ID
 local ALLOWED_PLACE_ID = 10959918411
 
+-- Memeriksa apakah skrip sudah pernah di-execute sebelumnya
+if getgenv().IsPluginLoaded then
+    warn("[SERVER] ERROR: Script sudah berjalan!")
+    return -- Menghentikan eksekusi jika sudah ada
+end
+
 -- Memeriksa apakah Place ID saat ini sesuai
 if game.PlaceId == ALLOWED_PLACE_ID then
+    -- Menandai bahwa skrip sudah berjalan
+    getgenv().IsPluginLoaded = true
+    
     print("-----------------------------------------")
     print("[SERVER] Memulai proses loading...")
-    task.wait(1) -- Delay 1 detik
+    task.wait(1) 
     
     print("[SERVER] Load Script")
-    task.wait(0.5) -- Delay 0.5 detik
+    task.wait(0.5)
     
     print("[SERVER] Menginisialisasi Plugin...")
-    task.wait(0.8) -- Delay 0.8 detik
+    task.wait(0.8)
     
     print("[SERVER] Plugin Berhasil Dimuat!")
     print("-----------------------------------------")
