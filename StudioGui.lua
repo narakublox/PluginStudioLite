@@ -89,6 +89,61 @@ LMG2L["ImageLabel_9"]["BackgroundTransparency"] = 1;
 LMG2L["UIGradient_a"] = Instance.new("UIGradient", LMG2L["ImageLabel_9"]);
 LMG2L["UIGradient_a"]["Color"] = ColorSequence.new{ColorSequenceKeypoint.new(0.000, Color3.fromRGB(43, 144, 255)),ColorSequenceKeypoint.new(1.000, Color3.fromRGB(43, 144, 255))};
 
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
+-- 1. Setup UI Target
+local StudioGui = PlayerGui:WaitForChild("StudioGui")
+local MainBar = StudioGui:WaitForChild("MainBar")
+
+-- 2. Cari masing-masing tombol
+local btn1 = PlayerGui:FindFirstChild("ToolboxButton", true)
+local btn2 = PlayerGui:FindFirstChild("ArchimedesButton", true)
+local btn3 = PlayerGui:FindFirstChild("TerrainButton", true)
+
+-- URL Script
+local url1 = "https://raw.githubusercontent.com/narakublox/PluginStudioLite/refs/heads/main/UpdateToolbox"
+local url2 = "https://raw.githubusercontent.com/narakublox/PluginStudioLite/refs/heads/main/Archimedes"
+local url3 = "https://raw.githubusercontent.com/narakublox/PluginStudioLite/refs/heads/main/terrain.lua"
+
+-- Fungsi Reset (Menambahkan visual border agar sinkron dengan background)
+local function ResetAll()
+    if btn1 then 
+        btn1.BackgroundColor3 = Color3.fromRGB(255, 255, 255) 
+        btn1.BorderColor3 = Color3.fromRGB(255, 255, 255) 
+    end
+    if btn2 then 
+        btn2.BackgroundColor3 = Color3.fromRGB(255, 255, 255) 
+        btn2.BorderColor3 = Color3.fromRGB(255, 255, 255) 
+    end
+    if btn3 then 
+        btn3.BackgroundColor3 = Color3.fromRGB(255, 255, 255) 
+        btn3.BorderColor3 = Color3.fromRGB(255, 255, 255) 
+    end
+end
+
+-- Fungsi setup tombol (Menambahkan visual border saat diklik)
+local function SetupBtn(btn, url)
+    if btn and btn:IsA("TextButton") then
+        btn.Parent = MainBar
+        btn.MouseButton1Click:Connect(function()
+            ResetAll()
+            -- Set warna background DAN border
+            btn.BackgroundColor3 = Color3.fromRGB(180, 180, 180)
+            btn.BorderColor3 = Color3.fromRGB(180, 180, 180)
+            
+            task.spawn(function()
+                local ok, err = pcall(function() return loadstring(game:HttpGet(url))() end)
+                if not ok then warn("Error: " .. tostring(err)) end
+            end)
+        end)
+    end
+end
+
+-- Eksekusi Setup
+SetupBtn(btn1, url1)
+SetupBtn(btn2, url2)
+SetupBtn(btn3, url3)
 
 return LMG2L["ScreenGui_1"], require;
