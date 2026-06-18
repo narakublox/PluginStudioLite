@@ -1,4 +1,4 @@
--- Instances: 10 | Scripts: 0 | Modules: 0 | Tags: 0
+-- StudioGui - MainBar | Plugin Naraku
 local LMG2L = {};
 
 -- Players.KenDmugiwara01.PlayerGui.ScreenGui
