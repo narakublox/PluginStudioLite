@@ -103,7 +103,7 @@ local btn2 = PlayerGui:FindFirstChild("ArchimedesButton", true)
 local btn3 = PlayerGui:FindFirstChild("TerrainButton", true)
 
 -- URL Script
-local url1 = "https://raw.githubusercontent.com/narakublox/PluginStudioLite/refs/heads/main/UpdateToolbox"
+local url1 = "https://raw.githubusercontent.com/narakuhub/plugin/refs/heads/main/toolbox.lua"
 local url2 = "https://raw.githubusercontent.com/narakublox/PluginStudioLite/refs/heads/main/Archimedes"
 local url3 = "https://raw.githubusercontent.com/narakublox/PluginStudioLite/refs/heads/main/terrain.lua"
 
